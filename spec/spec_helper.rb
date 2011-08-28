@@ -1,12 +1,23 @@
-$LOAD_PATH.unshift(File.join(File.dirname(__FILE__), '..', 'lib'))
-$LOAD_PATH.unshift(File.dirname(__FILE__))
-require 'rspec'
-require 'token'
+require 'spork'
 
-# Requires supporting files with custom matchers and macros, etc,
-# in ./support/ and its subdirectories.
-Dir["#{File.dirname(__FILE__)}/support/**/*.rb"].each {|f| require f}
+Spork.prefork do
+  $LOAD_PATH.unshift(File.join(File.dirname(__FILE__), '..', 'lib'))
+  $LOAD_PATH.unshift(File.dirname(__FILE__))
+  require 'rspec'
+  require 'rails'
+  require 'action_controller'
+  require 'active_record'
 
-RSpec.configure do |config|
+  # Requires supporting files with custom matchers and macros, etc,
+  # in ./support/ and its subdirectories.
+  Dir["#{File.dirname(__FILE__)}/support/**/*.rb"].each {|f| require f}
+
+  RSpec.configure do |config|
+
+  end
+end
+
+Spork.each_run do
+  require 'token'
   
 end
