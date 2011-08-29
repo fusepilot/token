@@ -32,22 +32,26 @@ module Token
     def get_token_view type, id
       return case type
         when "vimeo"
-          render :partial => 'token/vimeo', :locals => {:id => id}
+          render :partial => 'shared/vimeo', :locals => {:id => id}
         when "youtube"
-          render :partial => 'token/youtube', :locals => {:id => id}
+          render :partial => 'shared/youtube', :locals => {:id => id}
+        when "teaser-image"
+          render :partial => 'shared/teaser_image', :locals => {:image => Image.find(id)}
         when "gallery"
           render :partial => 'shared/gallery', :locals => {:gallery => Gallery.find(id)}
+        
         else
           raise Token::Error, "Couldn't find token template: #{type}."
       end
     end
     
     def replace text, tokens
+      text_replace = text
       tokens.each do |token|
         token_view = get_token_view(token[:type], token[:id])
-        text.gsub!(/#{Regexp.quote(token[:pattern])}/, token_view)
+        text_replace.gsub!(/#{Regexp.quote(token[:pattern])}/, token_view)
       end
-      text
+      text_replace
     end
     
     def markdown text
@@ -66,6 +70,12 @@ module Token
   
     module ClassMethods
       def tokenize attribute
+        
+        unless self.column_names.include?(attribute.to_s) &&
+                 self.column_names.include?("rendered_#{attribute}")
+          raise "#{self.name} doesn't have required attributes :#{attribute} and :rendered_#{attribute}\nPlease generate a migration to add these attributes -- both should have type :text."
+        end
+        
         self.before_validation :"render_#{attribute}"
 
         define_method :"render_#{attribute}" do
