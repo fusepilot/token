@@ -36,7 +36,7 @@ module Token
         when "youtube"
           render :partial => 'token/youtube', :locals => {:id => id}
         when "gallery"
-          render :partial => 'token/gallery', :locals => {:gallery => Gallery.find(id)}
+          render :partial => 'shared/gallery', :locals => {:gallery => Gallery.find(id)}
         else
           raise Token::Error, "Couldn't find token template: #{type}."
       end
