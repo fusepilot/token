@@ -13,20 +13,15 @@ module Token
     
     def initialize text=nil
       unless text.nil? 
-        tokens = find_tokens(text)
         @rendered = markdown(replace(text, tokens))
       end
     end
     
-    def find_tokens text
-      tokens = []
-      text.scan(/@\[(?<type>.*)\]\((?<id>.*)\)/).each do |match|
-        type = match[0]
-        id = match[1]
-        pattern = "@[#{type}](#{id})"
-        tokens << {:type => type, :id => id, :pattern => pattern}
+    def replace text
+      text.gsub(/@\[(?<type>.*)\]\((?<id>.*)\)/) do |token|
+        type, id = $1, $2
+        token = get_token_view(type, id)
       end
-      tokens
     end
       
     def get_token_view type, id
@@ -43,15 +38,6 @@ module Token
         else
           raise Token::Error, "Couldn't find token template: #{type}."
       end
-    end
-    
-    def replace text, tokens
-      text_replace = text
-      tokens.each do |token|
-        token_view = get_token_view(token[:type], token[:id])
-        text_replace.gsub!(/#{Regexp.quote(token[:pattern])}/, token_view)
-      end
-      text_replace
     end
     
     def markdown text
