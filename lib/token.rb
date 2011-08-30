@@ -1,11 +1,14 @@
 require "redcarpet"
+require 'token/railtie'
+require 'token/engine'
+require 'action_controller'
 
 module Token
-  
   class Error < StandardError; end
   
   class Render < AbstractController::Base
    include AbstractController::Rendering
+   include Token
     
     attr_accessor :rendered
     
@@ -13,31 +16,46 @@ module Token
     
     def initialize text=nil
       unless text.nil? 
-        @rendered = markdown(replace(text, tokens))
+        parse_tokens text do |token|
+          render_token token
+          #markdown(render_token(token[:type], token[:args], token[:value]))
+        end
       end
     end
     
-    def replace text
-      text.gsub(/@\[(?<type>.*)\]\((?<id>.*)\)/) do |token|
-        type, id = $1, $2
-        token = get_token_view(type, id)
+    def parse_tokens text, &block
+      # matches "@[token-name](main value for token)" and
+      # "@[token-name]{arg=value}(main value for token)"
+      text.gsub(/@\[(.+)\](?:\{(.*)\})*\((.*)\)/) do |match|
+        type, args, value = $1, $2, $3
+        args_hash = {}
+        unless args.nil?
+          args.split(',').each do |arg|
+            k, v = arg.strip.split("=").map(&:to_s)
+            args_hash[k.to_sym] = v.to_s
+          end
+        end
+
+
+        if block_given?
+          block.call({:type => type, :args => args_hash, :value => value})
+        else 
+          match
+        end
       end
     end
+    
+    def render_token token
+      Token::Configuration.load
+      #locals = token[:args]
       
-    def get_token_view type, id
-      return case type
-        when "vimeo"
-          render :partial => 'shared/vimeo', :locals => {:id => id}
-        when "youtube"
-          render :partial => 'shared/youtube', :locals => {:id => id}
-        when "teaser-image"
-          render :partial => 'shared/teaser_image', :locals => {:image => Image.find(id)}
-        when "gallery"
-          render :partial => 'shared/gallery', :locals => {:gallery => Gallery.find(id)}
-        
-        else
-          raise Token::Error, "Couldn't find token template: #{type}."
-      end
+      #unless token[:model].nil?
+      #  model_name = token[:model].constantize
+      #  model = model_name.find(arg)
+      #  locals[token[:model].downcase.to_sym] = model
+      #end
+      
+      #render :partial => token[:partial], :locals => locals
     end
     
     def markdown text
@@ -50,37 +68,4 @@ module Token
       @rendered
     end
   end
-  
-  module Tokenize
-    extend ActiveSupport::Concern
-  
-    module ClassMethods
-      def tokenize attribute
-        
-        unless self.column_names.include?(attribute.to_s) &&
-                 self.column_names.include?("rendered_#{attribute}")
-          raise "#{self.name} doesn't have required attributes :#{attribute} and :rendered_#{attribute}\nPlease generate a migration to add these attributes -- both should have type :text."
-        end
-        
-        self.before_validation :"render_#{attribute}"
-
-        define_method :"render_#{attribute}" do
-          self.send :"rendered_#{attribute}=", Token::Render.new(self.send(attribute)).rendered
-        end
-      end
-    end
-  end
-  
-  module TokenizeHelper
-    extend ActiveSupport::Concern
-    
-    module InstanceMethods
-      def tokenize text
-        Token::Render.new(text).rendered
-      end
-    end
-  end
 end
-
-ActiveRecord::Base.send :include, Token::Tokenize
-ActionView::Base.send :include, Token::TokenizeHelper

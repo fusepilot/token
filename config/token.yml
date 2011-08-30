@@ -1,0 +1,8 @@
+vimeo:
+  partial: "shared/vimeo"
+  
+youtube:
+  partial: "shared/youtube"
+  
+update:
+  partial: "shared/update"

@@ -9,8 +9,8 @@ Gem::Specification.new do |s|
 
   s.required_rubygems_version = Gem::Requirement.new(">= 0") if s.respond_to? :required_rubygems_version=
   s.authors = [%q{Michael Delaney}]
-  s.date = %q{2011-08-29}
-  s.description = "Replaces 'tokens' in text with partials or other text."
+  s.date = %q{2011-08-30}
+  s.description = %q{TODO: longer description of your gem}
   s.email = %q{fusepilot@gmail.com}
   s.extra_rdoc_files = [
     "LICENSE.txt",
@@ -25,8 +25,8 @@ Gem::Specification.new do |s|
     "README.rdoc",
     "Rakefile",
     "VERSION",
-    "app/views/token/_vimeo.html.erb",
-    "app/views/token/_youtube.html.erb",
+    "app/views/shared/_vimeo.html.erb",
+    "app/views/shared/_youtube.html.erb",
     "lib/token.rb",
     "spec/spec_helper.rb",
     "spec/token_spec.rb",
@@ -36,26 +36,29 @@ Gem::Specification.new do |s|
   s.licenses = [%q{MIT}]
   s.require_paths = [%q{lib}]
   s.rubygems_version = %q{1.8.6}
-  s.summary = "Replaces 'tokens' in text with partials or other text."
+  s.summary = %q{TODO: one-line summary of your gem}
 
   if s.respond_to? :specification_version then
     s.specification_version = 3
 
     if Gem::Version.new(Gem::VERSION) >= Gem::Version.new('1.2.0') then
-      s.add_runtime_dependency(%q<activesupport>, [">= 3.0.10"])
+      s.add_runtime_dependency(%q<rails>, [">= 3.0.0"])
+      s.add_development_dependency(%q<rspec>, [">= 0"])
       s.add_development_dependency(%q<rspec-rails>, ["~> 2.6"])
       s.add_development_dependency(%q<bundler>, ["~> 1.0.0"])
       s.add_development_dependency(%q<jeweler>, ["~> 1.6.4"])
       s.add_development_dependency(%q<spork>, [">= 0"])
     else
-      s.add_dependency(%q<activesupport>, [">= 3.0.10"])
+      s.add_dependency(%q<rails>, [">= 3.0.0"])
+      s.add_dependency(%q<rspec>, [">= 0"])
       s.add_dependency(%q<rspec-rails>, ["~> 2.6"])
       s.add_dependency(%q<bundler>, ["~> 1.0.0"])
       s.add_dependency(%q<jeweler>, ["~> 1.6.4"])
       s.add_dependency(%q<spork>, [">= 0"])
     end
   else
-    s.add_dependency(%q<activesupport>, [">= 3.0.10"])
+    s.add_dependency(%q<rails>, [">= 3.0.0"])
+    s.add_dependency(%q<rspec>, [">= 0"])
     s.add_dependency(%q<rspec-rails>, ["~> 2.6"])
     s.add_dependency(%q<bundler>, ["~> 1.0.0"])
     s.add_dependency(%q<jeweler>, ["~> 1.6.4"])
