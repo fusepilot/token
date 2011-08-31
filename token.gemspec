@@ -2,6 +2,7 @@
 # project in your rails apps through git.
 Gem::Specification.new do |s|
   s.name = "token"
+  s.authors = "Michael Delaney"
   s.summary = "Insert Token summary."
   s.description = "Insert Token description."
   s.files = Dir["{app,lib,config}/**/*"] + ["MIT-LICENSE", "Rakefile", "Gemfile", "README.rdoc"]
