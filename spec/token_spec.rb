@@ -49,4 +49,8 @@ Praesent id massa id nisl venenatis lacinia." }
     render = Token::Render.new
     render.render_token({:type=>"youtube", :args=>{}, :value=>"jkas8sdh128"}).should include(single_token_render)
   end
+  
+  it "should add the tokenize method to action view helpers" do
+    ActionView::Base.method_defined?(:tokenize).should == true
+  end
 end

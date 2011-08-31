@@ -1,5 +1,3 @@
-require 'token/config'
-require 'token/render'
 require 'action_controller'
 
 module Token
@@ -102,4 +100,16 @@ module Token
       return render :partial => token[:partial], :locals => locals
     end
   end
+  
+  module ActionViewExtension
+    extend ::ActiveSupport::Concern
+    
+    module InstanceMethods
+      def tokenize text
+        ::Token.render text
+      end
+    end
+  end
+  
+  ::ActionView::Base.send :include, Token::ActionViewExtension
 end
