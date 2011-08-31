@@ -1,6 +1,6 @@
 module Token
   module ActionViewExtension
-    extend ::ActiveSupport::Concern
+    #extend ::ActiveSupport::Concern
     
     module InstanceMethods
       def tokenize text

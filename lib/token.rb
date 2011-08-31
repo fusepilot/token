@@ -1,53 +1,95 @@
-require "redcarpet"
-require 'token/railtie'
-require 'token/engine'
+require 'token/config'
+require 'token/render'
 require 'action_controller'
 
 module Token
-  class Error < StandardError; end
+  
+  mattr_accessor :options
+  Token.options = {}
+  
+  class << self
+    def render text=nil
+      unless text.nil? 
+        @replaced = find_tokens text do |token|
+          Token::Render.new.render_token token
+        end
+        @replaced = markdown(@replaced)
+      end
+    end
+    
+    def config_file
+      Rails.root.join("config", "token.yml")
+    end
+    
+    def views_directory
+      Rails.root.join("app", "views")
+    end
+    
+    def find_tokens text, &block
+      tokens = []
+
+      text.gsub!(/@\[(.+)\](?:\{(.*)\})*\((.*)\)/) do |match|
+        type, args, value = $1, $2, $3
+        if block_given?
+          block_replace = block.call({:type => type, :args => parse_args(args), :value => value})
+          match = block_replace
+        end
+      end
+      return text
+    end
+    
+    def parse_args args
+      args_hash = {}
+      unless args.nil?
+        args.split(',').each do |arg|
+          k, v = arg.strip.split("=").map(&:to_s)
+          args_hash[k.to_sym] = v.to_s
+        end
+      end
+      return args_hash
+    end
+    
+    def reload!
+      Token::Config.load!
+    end
+    
+    private
+    
+    def markdown text
+      html_renderer = Redcarpet::Render::XHTML.new(:hard_wrap => true)
+      markdown = Redcarpet::Markdown.new(html_renderer, :autolink => true)
+      rendered_text = markdown.render(text)
+    end
+  end
+  
+  class TokenConfigError < Exception; end
+  
+  module Config
+    mattr_accessor :options
+    
+    def self.load!
+      if File.exists?(Token.config_file)
+        Token.options = {}
+        File.open(Token.config_file) do |f|
+          file_options = YAML::load(ERB.new(f.read).result).symbolize_keys
+          file_options.each do |k, v|
+            Token.options[k] = v.symbolize_keys!
+          end if file_options
+        end
+      else
+        #raise TokenConfigError, "Config file 'token.yml', was not found."
+        return false
+      end
+    end
+  end
+  
   
   class Render < AbstractController::Base
-   include AbstractController::Rendering
-   include Token
-    
-    attr_accessor :rendered
-    
-    self.view_paths = "app/views"
-    
-    def initialize text=nil
-      unless text.nil? 
-        parse_tokens text do |token|
-          render_token token
-          #markdown(render_token(token[:type], token[:args], token[:value]))
-        end
-      end
-    end
-    
-    def parse_tokens text, &block
-      # matches "@[token-name](main value for token)" and
-      # "@[token-name]{arg=value}(main value for token)"
-      text.gsub(/@\[(.+)\](?:\{(.*)\})*\((.*)\)/) do |match|
-        type, args, value = $1, $2, $3
-        args_hash = {}
-        unless args.nil?
-          args.split(',').each do |arg|
-            k, v = arg.strip.split("=").map(&:to_s)
-            args_hash[k.to_sym] = v.to_s
-          end
-        end
-
-
-        if block_given?
-          block.call({:type => type, :args => args_hash, :value => value})
-        else 
-          match
-        end
-      end
-    end
+    include AbstractController::Rendering
     
     def render_token token
-      Token::Configuration.load
-      #locals = token[:args]
+      Render.view_paths = Token.views_directory.to_s
+      locals = token[:args].merge!({:type => token[:type], :value => token[:value]})
       
       #unless token[:model].nil?
       #  model_name = token[:model].constantize
@@ -55,17 +97,9 @@ module Token
       #  locals[token[:model].downcase.to_sym] = model
       #end
       
-      #render :partial => token[:partial], :locals => locals
-    end
-    
-    def markdown text
-      html_renderer = Redcarpet::Render::XHTML.new(:hard_wrap => true)
-      markdown = Redcarpet::Markdown.new(html_renderer, :autolink => true, :space_after_headers => true)
-      rendered_text = markdown.render(text)
-    end
-    
-    def to_s
-      @rendered
+      #merge in config parameters
+      token.merge! Token.options[token[:type].to_sym]
+      return render :partial => token[:partial], :locals => locals
     end
   end
 end

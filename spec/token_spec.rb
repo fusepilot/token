@@ -1,66 +1,52 @@
-require File.expand_path(File.dirname(__FILE__) + '/spec_helper')
+require 'spec_helper'
 
-single_token_text = "### Cum sociis
-## Etiam vel augue.
-[Test](www.test.com) 
-@[youtube](jkas8sdh128)
-Praesent id massa id nisl venenatis lacinia."
+describe Token do
+  
+  let(:single_token_text) { "### Cum sociis\n
+## Etiam vel augue.\n
+[Test](www.test.com)\n
+@[youtube](jkas8sdh128)\n
+Praesent id massa id nisl venenatis lacinia." }
 
-single_output_text = "### Cum sociis @[youtube](jkas8sdh128)
-## Etiam vel augue.
-[Test](www.test.com) 
-@[vimeo]{date=8.26.11}(22002326)
-Praesent id massa id nisl venenatis lacinia."
+  let(:multiple_token_text) { "### Cum sociis\n
+@[youtube](jkas8sdh128)\n
+## Etiam vel augue.\n
+[Test](www.test.com)\n
+@[vimeo]{date=8.26.11}(22002326)\n
+Praesent id massa id nisl venenatis lacinia." }
 
-multiple_token_text = "### Cum sociis @[youtube](jkas8sdh128)
-## Etiam vel augue.
-[Test](www.test.com) 
-@[vimeo]{date=8.26.11}(22002326)
-Praesent id massa id nisl venenatis lacinia."
-
-rendered_vimeo = '<p><iframe src="http://player.vimeo.com/video/22002326?title=0&amp;byline=0&amp;portrait=0" width="620" height="349" frameborder="0"></iframe></p>'
-
-describe Token do 
-  #it "should replace text with a single token and markdown" do
-  #  Token::Render.new(single_token_text).rendered
-  #end
-  before(:each) do
+  let(:single_token_render) { '<object style="height: 349px; width: 620px"><param name="movie" value="http://www.youtube.com/v/jkas8sdh128?version=4"><param name="allowFullScreen" value="true"><param name="allowScriptAccess" value="always"><embed src="http://www.youtube.com/v/jkas8sdh128?version=4" type="application/x-shockwave-flash" allowfullscreen="true" allowScriptAccess="always" width="620" height="349"></object>' }
     
+  it "should load the configuration file" do
+    Token.reload!
+    Token.options.should_not be nil
   end
   
-  it "loads configuration" do
-    
-    p File.expand_path(".")
-    Token::Config.load
+  it "should automatically find tokens, replace them with their views, then insert markdown" do
+    render = ::Token.render single_token_text
+    render.should include(single_token_render)
+    render.should include("<h3>Cum sociis</h3>")
+    render.should include('<a href="www.test.com">Test</a>')
+    render.should include("<h2>Etiam vel augue.</h2>")
+    render.should include("<p>Praesent id massa id nisl venenatis lacinia.</p>")
   end
   
-  it "parses tokens" do
-    render = Token::Render.new
-    render.parse_tokens single_token_text do |token|
+  it "should find tokens, provides a block with each token to modify" do
+    ::Token.find_tokens multiple_token_text do |token|
       token.should be_a_kind_of(Hash)
-      token.should_not be nil
-      token.should == {:type=>"youtube", :args=>{}, :value=>"jkas8sdh128"}
     end
   end
   
+  it "should find tokens, takes in a block to replace the current token in the given text " do
+    replace = ::Token.find_tokens multiple_token_text do |token|
+      token[:type].upcase
+    end
+    
+    replace.should include("YOUTUBE", "VIMEO")
+  end
   
-  
-  #it "renders partial" do
-  #  token = Token::Render.new
-  #  rendered = token.get_token_view "vimeo", "22002326"
-  #  rendered.should == rendered_vimeo
-  #end
-  #
-  #it "raises exception when token template isn't found" do
-  #  token = Token::Render.new
-  #  lambda {token.tokenize "missing", "22002326"}.should raise_error
-  #end
-  
-  #it "should add the tokenize method to active record" do
-  #  ActiveRecord::Base.method_defined?(:tokenize).should == true
-  #end
-  
-  #it "should add the tokenize method to action views" do
-  #  ActionView::Base.method_defined?(:tokenize).should == true
-  #end
+  it "should replace tokens with rendered partials" do 
+    render = Token::Render.new
+    render.render_token({:type=>"youtube", :args=>{}, :value=>"jkas8sdh128"}).should include(single_token_render)
+  end
 end
