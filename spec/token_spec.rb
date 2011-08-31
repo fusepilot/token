@@ -17,6 +17,10 @@ Praesent id massa id nisl venenatis lacinia." }
 
   let(:single_token_render) { '<object style="height: 349px; width: 620px"><param name="movie" value="http://www.youtube.com/v/jkas8sdh128?version=4"><param name="allowFullScreen" value="true"><param name="allowScriptAccess" value="always"><embed src="http://www.youtube.com/v/jkas8sdh128?version=4" type="application/x-shockwave-flash" allowfullscreen="true" allowScriptAccess="always" width="620" height="349"></object>' }
     
+  before(:each) do
+    Token.options = nil
+  end
+  
   it "should load the configuration file" do
     Token.reload!
     Token.options.should_not be nil
@@ -52,5 +56,13 @@ Praesent id massa id nisl venenatis lacinia." }
   
   it "should add the tokenize method to action view helpers" do
     ActionView::Base.method_defined?(:tokenize).should == true
+    render = ActionView::Base.new.tokenize(single_token_text)
+    
+    render.should include(single_token_render)
+    render.should include("<h3>Cum sociis</h3>")
+    render.should include('<a href="www.test.com">Test</a>')
+    render.should include("<h2>Etiam vel augue.</h2>")
+    render.should include("<p>Praesent id massa id nisl venenatis lacinia.</p>")
+    
   end
 end
